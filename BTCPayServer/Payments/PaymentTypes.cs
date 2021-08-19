@@ -17,7 +17,7 @@ namespace BTCPayServer.Payments
     {
         private static PaymentType[] _paymentTypes =
         {
-            BTCLike, LightningLike,
+            BTCLike, LightningLike, 
 #if ALTCOINS
             MoneroLike,
             EthereumPaymentType.Instance
@@ -31,6 +31,10 @@ namespace BTCPayServer.Payments
         /// Lightning payment
         /// </summary>
         public static LightningPaymentType LightningLike => LightningPaymentType.Instance;
+        /// <summary>
+        /// Lightning payment
+        /// </summary>
+        public static LNURLPayPaymentType LNURLPay => LNURLPayPaymentType.Instance;
 
 #if ALTCOINS
         /// <summary>
@@ -84,6 +88,11 @@ namespace BTCPayServer.Payments
         public abstract object GetGreenfieldData(ISupportedPaymentMethod supportedPaymentMethod);
         
         public virtual bool IsPaymentType(string paymentType)
+        {
+            return IsPaymentTypeBase(paymentType);
+        }
+
+        protected bool IsPaymentTypeBase(string paymentType)
         {
             paymentType = paymentType?.ToLowerInvariant();
             return new[]

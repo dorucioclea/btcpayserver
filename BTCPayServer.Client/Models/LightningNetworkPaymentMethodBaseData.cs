@@ -9,4 +9,12 @@
             
         }
     }
+    
+    public class LNURLPayPaymentMethodBaseData
+    {
+        public LNURLPayPaymentMethodBaseData()
+        {
+            
+        }
+    }
 }

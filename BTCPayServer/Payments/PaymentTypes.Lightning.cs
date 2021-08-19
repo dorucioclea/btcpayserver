@@ -13,7 +13,7 @@ namespace BTCPayServer.Payments
     {
         public static LightningPaymentType Instance { get; } = new LightningPaymentType();
 
-        private LightningPaymentType() { }
+        private protected LightningPaymentType() { }
 
         public override string ToPrettyString() => "Off-Chain";
         public override string GetId() => "LightningLike";
@@ -77,7 +77,7 @@ namespace BTCPayServer.Payments
 
         public override bool IsPaymentType(string paymentType)
         {
-            return paymentType?.Equals("offchain", StringComparison.InvariantCultureIgnoreCase) is true || base.IsPaymentType(paymentType);
+            return paymentType?.Equals("offchain", StringComparison.InvariantCultureIgnoreCase) is true || base.base.IsPaymentType(paymentType);
         }
     }
 }

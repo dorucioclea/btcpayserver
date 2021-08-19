@@ -6,12 +6,12 @@ namespace BTCPayServer.Payments.Lightning
         public string InvoiceId { get; set; }
         public string NodeInfo { get; set; }
 
-        public string GetPaymentDestination()
+        public virtual string GetPaymentDestination()
         {
             return BOLT11;
         }
 
-        public PaymentType GetPaymentType()
+        public virtual PaymentType GetPaymentType()
         {
             return PaymentTypes.LightningLike;
         }
