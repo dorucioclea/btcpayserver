@@ -30,26 +30,20 @@ namespace BTCPayServer.Payments
     
     public class LNURLPayPaymentType : LightningPaymentType
     {
-        public static LNURLPayPaymentType Instance { get; } = new LNURLPayPaymentType();
-        
+        public static LNURLPayPaymentType Instance { get; } = new LNURLPayPaymentType();        
         public override string ToPrettyString() => "LNURL-Pay";
         public override string GetId() => "LNURLPAY";
         public override string ToStringNormalized() => "LNURLPAY";
-
-
-
         public override IPaymentMethodDetails DeserializePaymentMethodDetails(BTCPayNetworkBase network, string str)
         {
             return JsonConvert.DeserializeObject<LNURLPayPaymentMethodDetails>(str);
         }
-
 
         public override ISupportedPaymentMethod DeserializeSupportedPaymentMethod(BTCPayNetworkBase network,
             JToken value)
         {
             return JsonConvert.DeserializeObject<LNURLPaySupportedPaymentMethod>(value.ToString());
         }
-
 
         public override string GetPaymentLink(BTCPayNetworkBase network, IPaymentMethodDetails paymentMethodDetails,
             Money cryptoInfoDue, string serverUri)

@@ -77,7 +77,7 @@ namespace BTCPayServer.Payments
 
         public override bool IsPaymentType(string paymentType)
         {
-            return paymentType?.Equals("offchain", StringComparison.InvariantCultureIgnoreCase) is true || base.base.IsPaymentType(paymentType);
+            return paymentType?.Equals("offchain", StringComparison.InvariantCultureIgnoreCase) is true || base.IsPaymentType(paymentType);
         }
     }
 }

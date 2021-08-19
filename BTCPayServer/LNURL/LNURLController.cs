@@ -62,16 +62,26 @@ namespace BTCPayServer
             }
 
             var pmi = new PaymentMethodId(cryptoCode, PaymentTypes.LNURLPay);
+            var lnpmi = new PaymentMethodId(cryptoCode, PaymentTypes.LightningLike);
             var i = await _invoiceRepository.GetInvoice(invoiceId, true);
             if (i.Status == InvoiceStatusLegacy.New)
             {
-                var lightningSupportedPaymentMethod =
-                    i.GetSupportedPaymentMethod<LightningSupportedPaymentMethod>(pmi).First();
+                var isTopup = i.IsUnsetTopUp();
+                var mainLightningSupportedPaymentMethod =
+                    i.GetSupportedPaymentMethod<LightningSupportedPaymentMethod>(lnpmi).FirstOrDefault();
+                var lnurlSupportedPaymentMethod =
+                    i.GetSupportedPaymentMethod<LNURLPaySupportedPaymentMethod>(pmi).FirstOrDefault();
+                if (mainLightningSupportedPaymentMethod is null ||
+                    lnurlSupportedPaymentMethod is null ||
+                    (!isTopup && !lnurlSupportedPaymentMethod.EnableForStandardInvoices))
+                {
+                    return NotFound();
+                }
                 var lightningPaymentMethod = i.GetPaymentMethod(pmi);
                 var accounting = lightningPaymentMethod.Calculate();
                 var paymentMethodDetails =
                     lightningPaymentMethod.GetPaymentMethodDetails() as LNURLPayPaymentMethodDetails;
-                var isTopup = i.IsUnsetTopUp();
+                
                 var min = new LightMoney(isTopup ? 1 : accounting.Due);
                 var max = isTopup ? LightMoney.FromUnit(decimal.MaxValue, LightMoneyUnit.BTC): min;
                 var metadata =
@@ -79,16 +89,7 @@ namespace BTCPayServer
 
                 if (amount.HasValue && string.IsNullOrEmpty(paymentMethodDetails.BOLT11))
                 {
-                    //generate
-                }
-                else if(amount.HasValue && paymentMethodDetails.Amount)
-                
-                
-                if (string.IsNullOrEmpty(paymentMethodDetails.BOLT11))
-                {
-                    
-                    
-                    var client = CreateLightningClient(lightningSupportedPaymentMethod, network);
+                    var client = CreateLightningClient(mainLightningSupportedPaymentMethod, network);
                     var descriptionHash = new uint256(Sha256.Sha256.Hash(new ReadOnlySpan<byte>(Encoding.UTF8.GetBytes(metadata))));
                     var invoice = await client.CreateInvoice(new CreateInvoiceParams(amount.Value, descriptionHash.ToString(),
                         i.ExpirationTime.ToUniversalTime() - DateTimeOffset.UtcNow));
@@ -97,10 +98,6 @@ namespace BTCPayServer
                     paymentMethodDetails.Amount = new LightMoney(amount.Value);
                     lightningPaymentMethod.SetPaymentMethodDetails(paymentMethodDetails);
                     await _invoiceRepository.UpdateInvoicePaymentMethod(invoiceId, lightningPaymentMethod);
-                }
-                    
-                if (!string.IsNullOrEmpty(paymentMethodDetails.BOLT11))
-                {
                     return Ok(new LNURLPayRequest.LNURLPayRequestCallbackResponse()
                     {
                         Disposable = true,
@@ -108,21 +105,42 @@ namespace BTCPayServer
                         Pr = paymentMethodDetails.BOLT11
                     });
                 }
-
-                return Ok(new LNURL.LNURLPayRequest()
+                else if (amount.HasValue && paymentMethodDetails.Amount != amount)
                 {
-                    Tag = "payRequest",
-                    MinSendable = min,
-                    MaxSendable =max,
-                    CommentAllowed = 0,
-                    Metadata = metadata
-                });
+                    //mismatch in previously generated bolt from lnurl.. what should we do? 
+                    // Either Cancel prev invoice and generate new one 
+                    // throw error
+                    // return existing invoice anyway
+                    return Ok(new LNURLPayRequest.LNURLPayRequestCallbackResponse()
+                    {
+                        Disposable = true,
+                        Routes = Array.Empty<string>(),
+                        Pr = paymentMethodDetails.BOLT11
+                    });
+                }else if (amount.HasValue && paymentMethodDetails.Amount == amount)
+                {
+                    return Ok(new LNURLPayRequest.LNURLPayRequestCallbackResponse()
+                    {
+                        Disposable = true,
+                        Routes = Array.Empty<string>(),
+                        Pr = paymentMethodDetails.BOLT11
+                    });
+                }else if (amount is null)
+                {
+                    return Ok(new LNURL.LNURLPayRequest()
+                    {
+                        Tag = "payRequest",
+                        MinSendable = min,
+                        MaxSendable =max,
+                        CommentAllowed = 0,
+                        Metadata = metadata
+                    });
+                }
             }
             return BadRequest(new LNURL.LNUrlStatusResponse()
             {
                 Status = "ERROR", Reason = "Invoice not in a valid payable state"
             });
         }
-
     }
 }
