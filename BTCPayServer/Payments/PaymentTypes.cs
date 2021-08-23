@@ -17,7 +17,7 @@ namespace BTCPayServer.Payments
     {
         private static PaymentType[] _paymentTypes =
         {
-            BTCLike, LightningLike, 
+            BTCLike, LightningLike, LNURLPay
 #if ALTCOINS
             MoneroLike,
             EthereumPaymentType.Instance

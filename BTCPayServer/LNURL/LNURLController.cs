@@ -13,7 +13,6 @@ using LNURL;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using NBitcoin;
-using NBitcoin.DataEncoders;
 using Newtonsoft.Json;
 using NSec.Cryptography;
 
@@ -23,14 +22,19 @@ namespace BTCPayServer
     public class LNURLController : Controller
     {
         private readonly InvoiceRepository _invoiceRepository;
+        private readonly EventAggregator _eventAggregator;
         private readonly BTCPayNetworkProvider _btcPayNetworkProvider;
         private readonly LightningClientFactoryService _lightningClientFactoryService;
         private readonly IOptions<LightningNetworkOptions> _options;
 
-        public LNURLController(InvoiceRepository invoiceRepository, BTCPayNetworkProvider btcPayNetworkProvider, LightningClientFactoryService lightningClientFactoryService, 
+        public LNURLController(InvoiceRepository invoiceRepository, 
+            EventAggregator eventAggregator,
+            BTCPayNetworkProvider btcPayNetworkProvider, 
+            LightningClientFactoryService lightningClientFactoryService, 
             IOptions<LightningNetworkOptions> options)
         {
             _invoiceRepository = invoiceRepository;
+            _eventAggregator = eventAggregator;
             _btcPayNetworkProvider = btcPayNetworkProvider;
             _lightningClientFactoryService = lightningClientFactoryService;
             _options = options;
@@ -98,6 +102,9 @@ namespace BTCPayServer
                     paymentMethodDetails.Amount = new LightMoney(amount.Value);
                     lightningPaymentMethod.SetPaymentMethodDetails(paymentMethodDetails);
                     await _invoiceRepository.UpdateInvoicePaymentMethod(invoiceId, lightningPaymentMethod);
+                    
+                    _eventAggregator.Publish(new Events.InvoiceNewPaymentDetailsEvent(invoice.Id,
+                        paymentMethodDetails, pmi));
                     return Ok(new LNURLPayRequest.LNURLPayRequestCallbackResponse()
                     {
                         Disposable = true,

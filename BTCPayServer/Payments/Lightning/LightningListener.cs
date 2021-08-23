@@ -108,11 +108,21 @@ namespace BTCPayServer.Payments.Lightning
                 var listenedInvoices = new List<ListenedInvoice>();
                 var invoice = await _InvoiceRepository.GetInvoice(invoiceId);
                 foreach (var paymentMethod in invoice.GetPaymentMethods()
-                                                              .Where(c => c.GetId().PaymentType == PaymentTypes.LightningLike))
+                                                              .Where(c => new []{PaymentTypes.LightningLike, LNURLPayPaymentType.Instance }.Contains(c.GetId().PaymentType)))
                 {
-                    var lightningMethod = paymentMethod.GetPaymentMethodDetails() as LightningLikePaymentMethodDetails;
-                    if (lightningMethod == null || !lightningMethod.Activated)
-                        continue;
+                    LightningLikePaymentMethodDetails lightningMethod;
+                    switch (paymentMethod.GetPaymentMethodDetails())
+                    {
+                        case LNURLPayPaymentMethodDetails lnurlPayPaymentMethodDetails:
+                            lightningMethod = lnurlPayPaymentMethodDetails;
+                            break;
+                        case LightningLikePaymentMethodDetails { Activated: true } lightningLikePaymentMethodDetails:
+                            lightningMethod = lightningLikePaymentMethodDetails;
+                            break;
+                        default:
+                            continue;
+                    }
+
                     var lightningSupportedMethod = invoice.GetSupportedPaymentMethod<LightningSupportedPaymentMethod>()
                                               .FirstOrDefault(c => c.CryptoCode == paymentMethod.GetId().CryptoCode);
                     if (lightningSupportedMethod == null)
@@ -170,6 +180,13 @@ namespace BTCPayServer.Payments.Lightning
             leases.Add(_Aggregator.Subscribe<Events.InvoicePaymentMethodActivated>(inv =>
             {
                 if (inv.PaymentMethodId.PaymentType == LightningPaymentType.Instance)
+                {
+                    _CheckInvoices.Writer.TryWrite(inv.InvoiceId);
+                }
+            }));
+            leases.Add(_Aggregator.Subscribe<Events.InvoiceNewPaymentDetailsEvent>(inv =>
+            {
+                if (inv.PaymentMethodId.PaymentType == LNURLPayPaymentType.Instance)
                 {
                     _CheckInvoices.Writer.TryWrite(inv.InvoiceId);
                 }

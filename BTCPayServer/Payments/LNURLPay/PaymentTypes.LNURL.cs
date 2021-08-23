@@ -1,8 +1,6 @@
 using System;
-using BTCPayServer.Client.JsonConverters;
 using BTCPayServer.Client.Models;
 using BTCPayServer.Controllers.GreenField;
-using BTCPayServer.Lightning;
 using BTCPayServer.Payments.Lightning;
 using BTCPayServer.Services.Invoices;
 using NBitcoin;
@@ -11,23 +9,6 @@ using Newtonsoft.Json.Linq;
 
 namespace BTCPayServer.Payments
 {
-    public class LNURLPayPaymentMethodDetails : LightningLikePaymentMethodDetails
-    {
-        public string BTCPayInvoiceId { get; set; }
-        [JsonConverter(typeof(LightMoneyJsonConverter))]
-        public LightMoney? Amount { get; set; }
-
-        public override PaymentType GetPaymentType()
-        {
-            return LNURLPayPaymentType.Instance;
-        }
-
-        public override string GetPaymentDestination()
-        {
-            return BTCPayInvoiceId;
-        }
-    }
-    
     public class LNURLPayPaymentType : LightningPaymentType
     {
         public static LNURLPayPaymentType Instance { get; } = new LNURLPayPaymentType();        

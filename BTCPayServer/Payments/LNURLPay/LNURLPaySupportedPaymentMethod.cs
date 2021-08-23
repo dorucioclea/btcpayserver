@@ -13,9 +13,8 @@ namespace BTCPayServer.Payments.Lightning
         public PaymentMethodId PaymentId => new PaymentMethodId(CryptoCode, PaymentTypes.LNURLPay);
 
         public bool UseBech32Scheme { get; set; }
-        
-        public bool EnableForStandardInvoices { get; set; }
-        public bool EnableForApps { get; set; }
-        
+
+        public bool EnableForStandardInvoices { get; set; } = false;
+
     }
 }
