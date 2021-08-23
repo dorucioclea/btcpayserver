@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BTCPayServer.Client.Models;
 using BTCPayServer.Controllers.GreenField;
 using BTCPayServer.Payments.Lightning;
@@ -29,11 +30,14 @@ namespace BTCPayServer.Payments
         public override string GetPaymentLink(BTCPayNetworkBase network, IPaymentMethodDetails paymentMethodDetails,
             Money cryptoInfoDue, string serverUri)
         {
-            //lnurl does not care about being activated or not as it has its own efficient mechanism
+            if (!paymentMethodDetails.Activated)
+            {
+                return null;
+            }
             var lnurlPaymentMethodDetails = (LNURLPayPaymentMethodDetails)paymentMethodDetails;
             var uri = new Uri(
-                $"{serverUri.WithTrailingSlash()}{network.CryptoCode}/lnurl/{lnurlPaymentMethodDetails.BTCPayInvoiceId}");
-            return LNURL.LNURL.EncodeUri(uri, "payRequest", true).ToString();
+                $"{serverUri.WithTrailingSlash()}{network.CryptoCode}/lnurl/pay/{lnurlPaymentMethodDetails.BTCPayInvoiceId}");
+            return LNURL.LNURL.EncodeUri(uri, "payRequest", lnurlPaymentMethodDetails.bech32Mode).ToString();
         }
 
         public override string InvoiceViewPaymentPartialName { get; } = "Lightning/ViewLightningLikePaymentData";
@@ -47,6 +51,18 @@ namespace BTCPayServer.Payments
         public override bool IsPaymentType(string paymentType)
         {
             return IsPaymentTypeBase(paymentType);
+        }
+
+        public override void PopulateCryptoInfo(PaymentMethod details, InvoiceCryptoInfo invoiceCryptoInfo, string serverUrl)
+        {
+            invoiceCryptoInfo.PaymentUrls = new InvoiceCryptoInfo.InvoicePaymentUrls()
+            {
+                AdditionalData = new Dictionary<string, JToken>()
+                {
+                    {"LNURLP", JToken.FromObject(GetPaymentLink(details.Network, details.GetPaymentMethodDetails(), invoiceCryptoInfo.Due,
+                        serverUrl))}
+                }
+            };
         }
     }
 }

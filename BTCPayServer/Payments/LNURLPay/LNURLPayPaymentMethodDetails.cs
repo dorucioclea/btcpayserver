@@ -7,9 +7,11 @@ namespace BTCPayServer.Payments
 {
     public class LNURLPayPaymentMethodDetails : LightningLikePaymentMethodDetails
     {
-        public string BTCPayInvoiceId { get; set; }
         [JsonConverter(typeof(LightMoneyJsonConverter))]
         public LightMoney? Amount { get; set; }
+
+        public string BTCPayInvoiceId { get; set; }
+        public bool bech32Mode { get; set; }
 
         public override PaymentType GetPaymentType()
         {
@@ -18,7 +20,7 @@ namespace BTCPayServer.Payments
 
         public override string GetPaymentDestination()
         {
-            return BTCPayInvoiceId;
+            return null;
         }
     }
 }

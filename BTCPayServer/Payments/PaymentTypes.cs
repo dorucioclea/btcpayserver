@@ -103,5 +103,8 @@ namespace BTCPayServer.Payments
                 paymentType,
                 StringComparer.InvariantCultureIgnoreCase);
         }
+
+        public abstract void PopulateCryptoInfo(PaymentMethod details, Services.Invoices.InvoiceCryptoInfo invoiceCryptoInfo,
+            string serverUrl);
     }
 }

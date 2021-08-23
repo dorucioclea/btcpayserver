@@ -18,7 +18,7 @@ using NSec.Cryptography;
 
 namespace BTCPayServer
 {
-    [Route("~/stores/{storeId}/[controller]/{cryptoCode}")]
+    [Route("~/{cryptoCode}/[controller]/")]
     public class LNURLController : Controller
     {
         private readonly InvoiceRepository _invoiceRepository;
