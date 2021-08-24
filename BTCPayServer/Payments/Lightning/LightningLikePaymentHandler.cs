@@ -66,9 +66,8 @@ namespace BTCPayServer.Payments.Lightning
                     Activated = false
                 };
             }
-            //direct casting to (BTCPayNetwork) is fixed in other pull requests with better generic interfacing for handlers
             var storeBlob = store.GetStoreBlob();
-            var test = GetNodeInfo(paymentMethod.PreferOnion, supportedPaymentMethod, network);
+            var nodeInfo = GetNodeInfo(paymentMethod.PreferOnion, supportedPaymentMethod, network, logs);
             
             var invoice = paymentMethod.ParentEntity;
             decimal due = Extensions.RoundUp(invoice.Price / paymentMethod.Rate, network.Divisibility);
@@ -108,51 +107,61 @@ namespace BTCPayServer.Payments.Lightning
                     throw new PaymentMethodUnavailableException($"Impossible to create lightning invoice ({ex.Message})", ex);
                 }
             }
-            var nodeInfo = await test;
+
             return new LightningLikePaymentMethodDetails
             {
                 Activated = true,
                 BOLT11 = lightningInvoice.BOLT11,
                 InvoiceId = lightningInvoice.Id,
-                NodeInfo = nodeInfo.ToString()
+                NodeInfo = (await nodeInfo)?.ToString()
             };
         }
 
-        public async Task<NodeInfo> GetNodeInfo(bool preferOnion, LightningSupportedPaymentMethod supportedPaymentMethod, BTCPayNetwork network)
+        public async Task<NodeInfo> GetNodeInfo(bool preferOnion,
+            LightningSupportedPaymentMethod supportedPaymentMethod, BTCPayNetwork network, InvoiceLogs invoiceLogs)
         {
             if (!_Dashboard.IsFullySynched(network.CryptoCode, out var summary))
                 throw new PaymentMethodUnavailableException("Full node not available");
-
-            using (var cts = new CancellationTokenSource(LIGHTNING_TIMEOUT))
+            try
             {
-                var client = CreateLightningClient(supportedPaymentMethod, network);
-                LightningNodeInformation info;
-                try
+                
+                using (var cts = new CancellationTokenSource(LIGHTNING_TIMEOUT))
                 {
-                    info = await client.GetInfo(cts.Token);
-                }
-                catch (OperationCanceledException) when (cts.IsCancellationRequested)
-                {
-                    throw new PaymentMethodUnavailableException("The lightning node did not reply in a timely manner");
-                }
-                catch (Exception ex)
-                {
-                    throw new PaymentMethodUnavailableException($"Error while connecting to the API ({ex.Message})");
-                }
-                var nodeInfo = info.NodeInfoList.FirstOrDefault(i => i.IsTor == preferOnion) ?? info.NodeInfoList.FirstOrDefault();
-                if (nodeInfo == null)
-                {
-                    throw new PaymentMethodUnavailableException("No lightning node public address has been configured");
-                }
+                    var client = CreateLightningClient(supportedPaymentMethod, network);
+                    LightningNodeInformation info;
+                    try
+                    {
+                        info = await client.GetInfo(cts.Token);
+                    }
+                    catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                    {
+                        throw new PaymentMethodUnavailableException("The lightning node did not reply in a timely manner");
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new PaymentMethodUnavailableException($"Error while connecting to the API ({ex.Message})");
+                    }
+                    var nodeInfo = info.NodeInfoList.FirstOrDefault(i => i.IsTor == preferOnion) ?? info.NodeInfoList.FirstOrDefault();
+                    if (nodeInfo == null)
+                    {
+                        throw new PaymentMethodUnavailableException("No lightning node public address has been configured");
+                    }
 
-                var blocksGap = summary.Status.ChainHeight - info.BlockHeight;
-                if (blocksGap > 10)
-                {
-                    throw new PaymentMethodUnavailableException($"The lightning node is not synched ({blocksGap} blocks left)");
-                }
+                    var blocksGap = summary.Status.ChainHeight - info.BlockHeight;
+                    if (blocksGap > 10)
+                    {
+                        throw new PaymentMethodUnavailableException($"The lightning node is not synched ({blocksGap} blocks left)");
+                    }
 
-                return nodeInfo;
+                    return nodeInfo;
+                }
             }
+            catch(Exception e)
+            {
+                invoiceLogs.Write($"NodeInfo failed to be fetched: {e.Message}", InvoiceEventData.EventSeverity.Error);
+            }
+
+            return null;
         }
 
         private ILightningClient CreateLightningClient(LightningSupportedPaymentMethod supportedPaymentMethod, BTCPayNetwork network)
