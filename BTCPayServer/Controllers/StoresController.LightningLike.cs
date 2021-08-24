@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BTCPayServer.Data;
 using BTCPayServer.Lightning;
+using BTCPayServer.Logging;
 using BTCPayServer.Models.StoreViewModels;
 using BTCPayServer.Payments;
 using BTCPayServer.Payments.Lightning;
@@ -59,7 +60,8 @@ namespace BTCPayServer.Controllers
                 }
                 paymentMethod = new LightningSupportedPaymentMethod
                 {
-                    CryptoCode = paymentMethodId.CryptoCode
+                    CryptoCode = paymentMethodId.CryptoCode,
+                    DisableBOLT11PaymentOption = vm.LNURLEnabled && vm.LNURLStandardInvoiceEnabled && vm.DisableBolt11PaymentMethod
                 };
                 paymentMethod.SetInternalNode();
             }
@@ -88,9 +90,11 @@ namespace BTCPayServer.Controllers
 
                 paymentMethod = new LightningSupportedPaymentMethod
                 {
-                    CryptoCode = paymentMethodId.CryptoCode
+                    CryptoCode = paymentMethodId.CryptoCode,
+                    DisableBOLT11PaymentOption = vm.LNURLEnabled && vm.LNURLStandardInvoiceEnabled && vm.DisableBolt11PaymentMethod
                 };
                 paymentMethod.SetLightningUrl(connectionString);
+                
             }
 
             switch (command)
@@ -121,7 +125,7 @@ namespace BTCPayServer.Controllers
                     var handler = _ServiceProvider.GetRequiredService<LightningLikePaymentHandler>();
                     try
                     {
-                        var info = await handler.GetNodeInfo(Request.IsOnion(), paymentMethod, network);
+                        var info = await handler.GetNodeInfo(Request.IsOnion(), paymentMethod, network, new InvoiceLogs());
                         if (!vm.SkipPortTest)
                         {
                             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
@@ -181,6 +185,8 @@ namespace BTCPayServer.Controllers
             {
                 vm.LightningNodeType = lightning.IsInternalNode ? LightningNodeType.Internal : LightningNodeType.Custom;
                 vm.ConnectionString = lightning.GetDisplayableConnectionString();
+                
+                vm.DisableBolt11PaymentMethod = lightning.DisableBOLT11PaymentOption;
             }
             else
             {
@@ -193,10 +199,12 @@ namespace BTCPayServer.Controllers
                 vm.LNURLEnabled = true;
                 vm.LNURLBech32Mode = lnurl.UseBech32Scheme;
                 vm.LNURLStandardInvoiceEnabled = lnurl.EnableForStandardInvoices;
+                
             }
             else
             {
                 vm.LNURLEnabled = !lnSet;
+                vm.DisableBolt11PaymentMethod = false;
             }
         }
 

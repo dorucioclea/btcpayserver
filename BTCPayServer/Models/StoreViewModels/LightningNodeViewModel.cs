@@ -21,5 +21,6 @@ namespace BTCPayServer.Models.StoreViewModels
         public bool SkipPortTest { get; set; }
         public bool Enabled { get; set; } = true;
         public string StoreId { get; set; }
+        public bool DisableBolt11PaymentMethod { get; set; }
     }
 }

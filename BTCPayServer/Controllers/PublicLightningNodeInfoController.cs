@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BTCPayServer.Data;
 using BTCPayServer.Filters;
+using BTCPayServer.Logging;
 using BTCPayServer.Payments;
 using BTCPayServer.Payments.Lightning;
 using BTCPayServer.Services.Stores;
@@ -42,7 +43,7 @@ namespace BTCPayServer.Controllers
                 var network = _BtcPayNetworkProvider.GetNetwork<BTCPayNetwork>(cryptoCode);
                 var nodeInfo =
                     await _LightningLikePaymentHandler.GetNodeInfo(Request.IsOnion(), paymentMethodDetails,
-                        network);
+                        network, new InvoiceLogs());
 
                 return View(new ShowLightningNodeInfoViewModel
                 {

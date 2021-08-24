@@ -106,7 +106,7 @@ namespace BTCPayServer.Payments.Lightning
             model.InvoiceBitcoinUrl = cryptoInfo.PaymentUrls?.AdditionalData["LNURLP"].ToObject<string>();
             model.InvoiceBitcoinUrlQR = model.InvoiceBitcoinUrl;
             model.BtcAddress = model.InvoiceBitcoinUrl;
-
+            model.PeerInfo = ((LNURLPayPaymentMethodDetails) paymentMethod.GetPaymentMethodDetails()).NodeInfo;
             if ( storeBlob.LightningAmountInSatoshi && model.CryptoCode == "BTC")
             {
                 var satoshiCulture = new CultureInfo(CultureInfo.InvariantCulture.Name);
