@@ -36,7 +36,7 @@ namespace BTCPayServer.Payments
             }
             var lnurlPaymentMethodDetails = (LNURLPayPaymentMethodDetails)paymentMethodDetails;
             var uri = new Uri(
-                $"{serverUri.WithTrailingSlash()}{network.CryptoCode}/lnurl/pay/{lnurlPaymentMethodDetails.BTCPayInvoiceId}");
+                $"{serverUri.WithTrailingSlash()}{network.CryptoCode}/lnurl/pay/i/{lnurlPaymentMethodDetails.BTCPayInvoiceId}");
             return LNURL.LNURL.EncodeUri(uri, "payRequest", lnurlPaymentMethodDetails.Bech32Mode).ToString();
         }
 

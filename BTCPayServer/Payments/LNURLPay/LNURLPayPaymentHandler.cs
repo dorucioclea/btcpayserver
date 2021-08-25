@@ -64,8 +64,11 @@ namespace BTCPayServer.Payments.Lightning
                 {
                     throw new PaymentMethodUnavailableException("LNURL requires a lightning node to be configured for the store.");
                 }
-                return new LNURLPayPaymentMethodDetails() { Activated = false, LightningSupportedPaymentMethod = lnSupported
-                     };
+
+                return new LNURLPayPaymentMethodDetails()
+                {
+                    Activated = false, LightningSupportedPaymentMethod = lnSupported
+                };
             }
 
 
@@ -81,6 +84,7 @@ namespace BTCPayServer.Payments.Lightning
             return new LNURLPayPaymentMethodDetails()
             {
                 Activated = true, 
+                LightningSupportedPaymentMethod = lnLightningSupportedPaymentMethod,
                 BTCPayInvoiceId = paymentMethod.ParentEntity.Id,
                 Bech32Mode = supportedPaymentMethod.UseBech32Scheme,
                 NodeInfo = nodeInfo?.ToString()

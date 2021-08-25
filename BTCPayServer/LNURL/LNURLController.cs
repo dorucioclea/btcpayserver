@@ -58,7 +58,7 @@ namespace BTCPayServer
         }
 
 
-        [HttpGet("pay/{invoiceId}")]
+        [HttpGet("pay/i/{invoiceId}")]
         public async Task<IActionResult> GetLNURLForInvoice(string invoiceId, string cryptoCode,
             [FromQuery] long? amount = null)
         {
@@ -92,8 +92,8 @@ namespace BTCPayServer
                 }
 
 
-var min = new LightMoney(isTopup ? 1 : accounting.Due);
-                var max = isTopup ? LightMoney.FromUnit(decimal.MaxValue, LightMoneyUnit.BTC) : min;
+                var min = new LightMoney(isTopup ? 1 : accounting.Due);
+                var max = isTopup ? LightMoney.FromUnit(6.12m, LightMoneyUnit.BTC) : min;
                 var metadata =
                     JsonConvert.SerializeObject(new[] { new KeyValuePair<string, string>("text/plain", invoiceId) });
                 ;
